@@ -3,10 +3,19 @@ import { networkInterfaces } from 'node:os'
 
 type LanMessageSocket = { send: (data: string) => void }
 
+// Why: container bridges (Docker/Podman) are only reachable from this host, never from a LAN peer.
+const CONTAINER_INTERFACE_RE =
+  /^(docker\d*|docker_gwbridge|br-[0-9a-f]+|veth.*|cni-podman\d*|podman\d*)$/
+
 /** Non-internal IPv4 addresses a LAN peer can reach this machine on. */
-export function listLocalIPv4Addresses(): string[] {
+export function listLocalIPv4Addresses(
+  interfaces: ReturnType<typeof networkInterfaces> = networkInterfaces()
+): string[] {
   const ips: string[] = []
-  for (const iface of Object.values(networkInterfaces())) {
+  for (const [name, iface] of Object.entries(interfaces)) {
+    if (CONTAINER_INTERFACE_RE.test(name)) {
+      continue
+    }
     for (const addr of iface ?? []) {
       if (addr.family === 'IPv4' && !addr.internal) {
         ips.push(addr.address)
