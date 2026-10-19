@@ -7,6 +7,8 @@ import { WorkspacePortScanner } from '../components/ports/WorkspacePortScanner'
 import { SavedHostScopeWidenGate } from '../components/sidebar/SavedHostScopeWidenGate'
 import { MacosTccPromptNoticeHost } from '../hooks/MacosTccPromptNoticeHost'
 import { useAppStore } from '../store'
+import { AgentTransferReceivedGate } from '../components/pc-transfer/AgentTransferReceivedGate'
+import { PcTransferDialogHost } from '../components/pc-transfer/PcTransferDialogHost'
 import { StructuredAgentSessionAttentionBridge } from '../components/native-chat/StructuredAgentSessionAttentionBridge'
 import { StructuredAgentSessionStatusBridge } from '../components/native-chat/StructuredAgentSessionStatusBridge'
 
@@ -37,6 +39,8 @@ export function AppBackgroundServices(): React.JSX.Element {
         </Suspense>
       ) : null}
       <AgentHibernationGate />
+      <AgentTransferReceivedGate />
+      <PcTransferDialogHost />
       <StructuredAgentSessionStatusBridge />
       {/* Why here and not in the chat pane: a backgrounded chat has no mounted pane, and that is
           exactly the completion the user needs the dot for. */}

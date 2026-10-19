@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -20,7 +19,6 @@ import {
   Pencil,
   Pin,
   PinOff,
-  Share2,
   Trash2,
   Unlink,
   Workflow,
@@ -38,6 +36,7 @@ import { useOptionalShortcutLabel } from '@/hooks/useShortcutLabel'
 import type { WorktreeContextMenuModel } from './use-worktree-context-menu-model'
 import { WorktreeStatusMenuItems } from './WorktreeStatusMenuItems'
 import { WorktreeContextMenuOverlays } from './WorktreeContextMenuOverlays'
+import { WorktreePcTransferMenuItems } from './WorktreePcTransferMenuItems'
 import {
   WORKTREE_CONTEXT_MENU_SCOPE_ATTR,
   getWorktreeParentPickerLabel,
@@ -47,13 +46,12 @@ import {
   shouldUseNativeContextMenu
 } from './worktree-context-menu-policy'
 import { CLOSE_ALL_CONTEXT_MENUS_EVENT } from '@/lib/close-all-context-menus'
-import { LanShareSendModal } from '../lan-share/lan-share-send-modal'
-import { LanShareReceiveModal } from '../lan-share/lan-share-receive-modal'
 
 export default function WorktreeContextMenuView({ model }: { model: WorktreeContextMenuModel }) {
   const {
     batchDeleteWorktrees,
     children,
+    contentClassName,
     contextDeletePending,
     contextMenuOpenedAtRef,
     contextWorkspaceStatus,
@@ -80,6 +78,7 @@ export default function WorktreeContextMenuView({ model }: { model: WorktreeCont
     handleSleepSubtree,
     handleTogglePin,
     handleToggleRead,
+    hasAnyContextLineage,
     hasParentLink,
     isDeleting,
     isMultiContext,
@@ -103,8 +102,6 @@ export default function WorktreeContextMenuView({ model }: { model: WorktreeCont
     worktree,
     workspaceStatuses
   } = model
-  const [sendOpen, setSendOpen] = useState(false)
-  const [receiveOpen, setReceiveOpen] = useState(false)
   const deleteShortcut = useOptionalShortcutLabel('workspace.delete')
   return (
     <div
@@ -145,7 +142,7 @@ export default function WorktreeContextMenuView({ model }: { model: WorktreeCont
           />
         </DropdownMenuTrigger>
         <DropdownMenuContent
-          className={cn(lineageDescendantCount > 0 ? 'w-60' : 'w-52')}
+          className={cn(lineageDescendantCount > 0 ? 'w-60' : 'w-52', contentClassName)}
           sideOffset={0}
           align="start"
           onPointerUpCapture={suppressOpeningPointerEvent}
@@ -194,21 +191,11 @@ export default function WorktreeContextMenuView({ model }: { model: WorktreeCont
                 )}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onSelect={() => setSendOpen(true)} disabled={isDeleting}>
-                <Share2 className="size-3.5" />
-                {translate(
-                  'auto.components.sidebar.WorktreeContextMenu.sendTransfer',
-                  'Send to another PC'
-                )}
-              </DropdownMenuItem>
-              <DropdownMenuItem onSelect={() => setReceiveOpen(true)} disabled={isDeleting}>
-                <Share2 className="size-3.5" />
-                {translate(
-                  'auto.components.sidebar.WorktreeContextMenu.receiveTransfer',
-                  'Receive from another PC'
-                )}
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
+              <WorktreePcTransferMenuItems
+                worktree={worktree}
+                repo={repo ?? undefined}
+                disabled={isDeleting}
+              />
               <DropdownMenuItem onSelect={handleTogglePin} disabled={isDeleting}>
                 {worktree.isPinned ? <PinOff className="size-3.5" /> : <Pin className="size-3.5" />}
                 {worktree.isPinned
@@ -304,6 +291,19 @@ export default function WorktreeContextMenuView({ model }: { model: WorktreeCont
               )}
             </>
           )}
+          {isMultiContext && hasAnyContextLineage ? (
+            <>
+              <DropdownMenuItem onSelect={handleRemoveParentLink} disabled={deletingContext}>
+                <Unlink className="size-3.5" />
+                {translate(
+                  'auto.components.sidebar.WorktreeContextMenu.579b1a8e61',
+                  'Remove from Parent'
+                )}
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+            </>
+          ) : null}
+
           {shouldRevealWorktreeDeveloperMenu({ developerMenuRevealed, isMultiContext }) ? (
             <>
               <WorktreeDeveloperMenu worktreeId={worktree.id} disabled={isDeleting} />
@@ -319,6 +319,9 @@ export default function WorktreeContextMenuView({ model }: { model: WorktreeCont
             onSleep={handleCloseTerminals}
             onSleepSubtree={handleSleepSubtree}
           />
+          {/* Why: primary checkout rows can't be git-worktree-removed, so keep a
+             disabled Delete Worktree for parity with non-primary cards and pair
+             it with the enabled Remove Project action below. */}
           {!isMultiContext && removesProject ? (
             <Tooltip>
               <TooltipTrigger asChild>
@@ -340,6 +343,10 @@ export default function WorktreeContextMenuView({ model }: { model: WorktreeCont
               </TooltipContent>
             </Tooltip>
           ) : null}
+          {/* Why: primary checkout rows remove the project from Orca instead of
+             invoking git worktree deletion. Radix forwards unknown props to the
+             DOM element, so `title` works directly without a wrapper span —
+             this preserves Radix's flat roving-tabindex keyboard navigation. */}
           <DropdownMenuItem
             variant="destructive"
             onSelect={handleDelete}
@@ -387,8 +394,6 @@ export default function WorktreeContextMenuView({ model }: { model: WorktreeCont
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
-      <LanShareSendModal open={sendOpen} onClose={() => setSendOpen(false)} />
-      <LanShareReceiveModal open={receiveOpen} onClose={() => setReceiveOpen(false)} />
       <WorktreeContextMenuOverlays model={model} />
     </div>
   )

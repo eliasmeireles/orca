@@ -28,6 +28,7 @@ import type { DocPreviewApi } from './api/doc-preview-api'
 import type { EmulatorApi } from './api/emulator-api'
 import type { EphemeralVmApi } from './api/ephemeral-vm-api'
 import type { ExportApi, FilesystemApi } from './api/filesystem-api'
+import type { AgentTransferApi } from './api/agent-transfer-api'
 import type { GitInspectionApi } from './api/git-inspection-api'
 import type { GitOperationApi } from './api/git-operation-api'
 import type { GithubAccountApi } from './api/github-account-api'
@@ -58,7 +59,6 @@ import type { KeybindingsApi, SettingsApi } from './api/settings-api'
 import type { ShellApi } from './api/shell-api'
 import type { SpeechApi } from './api/speech-api'
 import type { SshApi } from './api/ssh-api'
-import type { LanShareApi } from './api/lan-share-api'
 import type { LegacyRelayBridgeApi } from './api/legacy-relay-bridge-api'
 import type { DiagnosticsApi, MemoryApi, StatsApi, TelemetryApi } from './api/telemetry-api'
 import type { UiCommandEventApi } from './api/ui-command-event-api'
@@ -90,6 +90,7 @@ export type PreloadApi = {
   feedback: FeedbackApi
   crashReports: CrashReportsApi
   export: ExportApi
+  agentTransfer: AgentTransferApi
   gh: Merged<GithubPullRequestApi & GithubWorkItemApi & GithubAccountApi>
   hostedReview: HostedReviewApi
   gl: GitLabApi
@@ -154,7 +155,6 @@ export type PreloadApi = {
   grokAccounts: GrokAccountsApi
   cursorAccounts: CursorAccountsApi
   ssh: SshApi
-  lanShare: LanShareApi
   /** COMPAT(legacy-relay-bridge): desktop-only, revisit 2027-01-15. */
   legacyRelayBridge?: LegacyRelayBridgeApi
   automations: AutomationsApi

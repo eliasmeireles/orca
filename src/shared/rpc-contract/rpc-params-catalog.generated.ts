@@ -63,6 +63,11 @@ import { CurrentRequestsParams } from './agent-session-current-requests-params'
 import { CreateAgentSessionParams, EnsureAgentSessionParams } from './agent-session-params'
 import { ReadVisualParams } from './agent-session-visual-params'
 import {
+  AgentTransferAbort,
+  AgentTransferCommit,
+  AgentTransferStageChunk
+} from './agent-transfer-params'
+import {
   AiVaultListSessionsParams,
   AiVaultPrepareSessionResumeParams,
   AiVaultSessionTitlesParams
@@ -722,6 +727,9 @@ export const RPC_PARAMS_BY_METHOD = {
   'agentSessionAttachment.uploadStart': AttachmentUploadStartParams,
   'agentTeams.prepareLaunch': AgentTeamsPrepareLaunch,
   'agentTeams.tmuxCompat': AgentTeamsTmuxCompat,
+  'agentTransfer.abort': AgentTransferAbort,
+  'agentTransfer.commit': AgentTransferCommit,
+  'agentTransfer.stageChunk': AgentTransferStageChunk,
   'aiVault.listSessions': AiVaultListSessionsParams,
   'aiVault.prepareSessionResume': AiVaultPrepareSessionResumeParams,
   'aiVault.resolveSessionTitles': AiVaultSessionTitlesParams,

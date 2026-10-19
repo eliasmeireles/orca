@@ -6154,8 +6154,8 @@
           "sidebarRowMissing": "Target no longer exists",
           "failedUnnestWorkspace": "Failed to unnest workspace",
           "hostRepairRequired": "Re-pair required",
-          "lanShareFor": "Share {{value0}} over LAN",
-          "lanShare": "LAN transfer"
+          "pcTransferFor": "Transfer {{value0}} to another PC",
+          "pcTransfer": "Transfer to another PC"
         },
         "WorktreeMetaDialog": {
           "3db0a2a593": "Cancel",
@@ -18179,41 +18179,36 @@
         "signingIn": "Signing in…",
         "cancel": "Cancel"
       },
-      "lanShare": {
+      "pcTransfer": {
+        "received": {
+          "notFound": "The received chat is not in Session History yet. Try again in a moment.",
+          "title": "Chat received from {{value0}}",
+          "open": "Open chat"
+        },
+        "anotherPc": "another PC",
         "progress": {
-          "transferring": "Transferring process"
+          "sending": "Sending chat"
         },
         "receive": {
-          "title": "Receive transfer",
-          "description": "Enter one of the addresses and the OTP code below on the sending PC.",
-          "otpLabel": "OTP code",
-          "otpHint": "Enter it on the sending PC",
-          "addressesLabel": "Available addresses (IP:PORT)",
-          "copy": "Copy",
-          "noIps": "No local IP address found",
-          "starting": "Starting server…",
-          "copied": "Copied",
-          "device": "Device: {{value0}}",
-          "otpExpires": "OTP expires at {{value0}}",
-          "connected": "Connected to {{value0}}",
-          "stop": "Stop server",
-          "start": "Start server"
+          "title": "Receive from another PC",
+          "description": "Create a pairing link and paste it on the other PC under \"Send to another PC\". Once paired, chats it sends appear here automatically."
         },
         "close": "Close",
         "send": {
-          "title": "Send transfer",
-          "connect": "Connect",
-          "otpLabel": "OTP code shown on the receiving PC",
-          "confirmOtp": "Confirm OTP",
-          "ptyLabel": "PTY ID to transfer",
-          "ptyPlaceholder": "Paste the PTY ID",
-          "transfer": "Transfer PTY",
-          "completed": "Transfer completed successfully.",
-          "descriptionAddress": "Enter the address shown on the receiving PC, then confirm its OTP code.",
-          "addressLabel": "Receiving PC address (IP:PORT)",
-          "addressInvalid": "Enter an address like 192.168.1.10:61569"
-        },
-        "cancel": "Cancel"
+          "title": "Send to another PC",
+          "description": "Sends a chat from {{value0}} with its full history. The other PC can continue it where it stopped.",
+          "pcLabel": "Destination PC",
+          "pcPlaceholder": "Choose a paired PC",
+          "pairNew": "Pair a new PC",
+          "workspaceLabel": "Destination workspace",
+          "workspacePlaceholder": "Choose a workspace on that PC",
+          "chatLabel": "Chat",
+          "chatsLoading": "Loading chats…",
+          "chatPlaceholder": "Choose a chat",
+          "noChats": "No Claude or Codex chats in this workspace yet.",
+          "done": "Chat sent. The other PC shows a notice to open it.",
+          "send": "Send"
+        }
       }
     },
     "i18n": {

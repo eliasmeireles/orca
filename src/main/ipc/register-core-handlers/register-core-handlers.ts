@@ -19,6 +19,7 @@ import { registerBitbucketHandlers } from '../bitbucket'
 import { registerFeedbackHandlers } from '../feedback'
 import { registerCrashReportingHandlers } from '../crash-reporting'
 import { registerExportHandlers } from '../export'
+import { registerAgentTransferHandlers } from '../agent-transfer-ipc'
 import { registerStatsHandlers } from '../stats'
 import { registerMemoryHandlers } from '../memory'
 import { registerRateLimitHandlers } from '../rate-limits'
@@ -196,6 +197,7 @@ export function registerCoreHandlers(
     registerCrashReportingHandlers(crashReports)
   }
   registerExportHandlers()
+  registerAgentTransferHandlers()
   registerStatsHandlers(stats)
   registerMemoryHandlers(store)
   registerNotificationHandlers(store, runtime)

@@ -22,6 +22,7 @@ import { ptyApi } from './api/pty-bridge'
 import { feedbackApi } from './api/feedback-bridge'
 import { crashReportsApi } from './api/crash-reports-bridge'
 import { exportApi } from './api/export-bridge'
+import { agentTransferApi } from './api/agent-transfer-bridge'
 import { ghApi } from './api/gh-bridge'
 import { hostedReviewApi } from './api/hosted-review-bridge'
 import { glApiBridge } from './api/gl-bridge'
@@ -78,7 +79,6 @@ import { zcodePlanCredentialsApi } from './api/zcode-plan-credentials-bridge'
 import { grokAccountsApi } from './api/grok-accounts-bridge'
 import { cursorAccountsApi } from './api/cursor-accounts-bridge'
 import { sshApi } from './api/ssh-bridge'
-import { lanShareApi } from './api/lan-share-bridge'
 import { legacyRelayBridgeApi } from './api/legacy-relay-bridge-api'
 import { automationsApi } from './api/automations-bridge'
 import { e2eApi } from './api/e2e-bridge'
@@ -120,6 +120,7 @@ const api = {
   feedback: feedbackApi,
   crashReports: crashReportsApi,
   export: exportApi,
+  agentTransfer: agentTransferApi,
   gh: ghApi,
   hostedReview: hostedReviewApi,
   gl: glApiBridge,
@@ -180,7 +181,6 @@ const api = {
   grokAccounts: grokAccountsApi,
   cursorAccounts: cursorAccountsApi,
   ssh: sshApi,
-  lanShare: lanShareApi,
   legacyRelayBridge: legacyRelayBridgeApi,
   automations: automationsApi,
   e2e: e2eApi,

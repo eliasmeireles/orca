@@ -8,7 +8,11 @@ import { RepoForkIndicator } from '@/components/repo/repo-fork-indicator'
 import type { FolderWorkspacePathStatus } from '../../../../../../shared/folder-workspace-path-status'
 import { isConfirmedStaleFolderPathStatus } from '../../../../../../shared/folder-workspace-path-status'
 import type { ProjectGroup } from '../../../../../../shared/project-group-types'
-import type { ExecutionHostId } from '../../../../../../shared/execution-host'
+import {
+  getRepoExecutionHostId,
+  LOCAL_EXECUTION_HOST_ID,
+  type ExecutionHostId
+} from '../../../../../../shared/execution-host'
 import { getProjectGroupHostId } from '@/store/slices/project-group-owner-routing'
 import type {
   WorkspaceStatus,
@@ -40,7 +44,7 @@ import {
   RepoHeaderProjectActionsMenu,
   type RepoHeaderProjectActions
 } from './repo-header-project-actions'
-import { RepoHeaderLanShareMenu } from './repo-header-lan-share-menu'
+import { RepoHeaderPcTransferMenu } from './repo-header-pc-transfer-menu'
 import {
   handleRepoHeaderCollapseAffordancePointerDown,
   shouldIgnoreRepoHeaderToggle
@@ -399,7 +403,11 @@ export function renderWorktreeSectionHeaderRow(args: {
             />
           ) : null}
 
-          {row.repo && ctx.groupBy === 'repo' ? <RepoHeaderLanShareMenu label={label} /> : null}
+          {row.repo &&
+          ctx.groupBy === 'repo' &&
+          getRepoExecutionHostId(row.repo) === LOCAL_EXECUTION_HOST_ID ? (
+            <RepoHeaderPcTransferMenu label={label} repoPath={row.repo.path} />
+          ) : null}
         </ProjectHeaderActions>
       </div>
     </div>
