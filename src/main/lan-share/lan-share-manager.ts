@@ -1,21 +1,11 @@
-import { networkInterfaces } from 'node:os'
 import { randomUUID } from 'node:crypto'
 import { WebSocket } from 'ws'
 import { getLocalPtyProvider } from '../ipc/pty/provider/registry'
 import { LanShareServer } from './lan-share-server'
+import { findFreePort, listLocalIPv4Addresses, sendLanMessage } from './lan-share-network'
 import type { LanShareConfig, LanShareState, LanShareRole } from '../../shared/lan-share-protocol'
 import { generateOTP } from '../../shared/lan-share-protocol'
-
-type LanShareManagerEvents = {
-  onStateChange: (state: LanShareState) => void
-  onConfigReady: (config: LanShareConfig) => void
-  onPeerConnected: (deviceId: string, deviceName: string) => void
-  onOTPChallenge: (otp: string, expiresAt: number) => void
-  onOTPResult: (accepted: boolean) => void
-  onTransferProgress: (b: number, t: number, p: number) => void
-  onTransferComplete: (ok: boolean, err?: string) => void
-  onError: (code: string, msg: string) => void
-}
+import type { LanShareManagerEvents } from './lan-share-manager-events'
 
 type LanShareWs = WebSocket & { readyState: number; send: (d: string) => void; close: () => void }
 
@@ -28,6 +18,7 @@ export class LanShareManager {
   private listenPort = 0
   private otp: string | null = null
   private otpExpiresAt = 0
+  private receiverConfig: LanShareConfig | null = null
   private senderWs: LanShareWs | null = null
   private pendingPtyId = ''
   private readonly events: LanShareManagerEvents
@@ -56,28 +47,24 @@ export class LanShareManager {
   }
 
   getLocalIPs(): string[] {
-    const ips: string[] = []
-    for (const iface of Object.values(networkInterfaces())) {
-      if (!iface) {
-        continue
-      }
-      for (const addr of iface) {
-        if (addr.family === 'IPv4' && !addr.internal) {
-          ips.push(addr.address)
-        }
-      }
-    }
-    return ips
+    return listLocalIPv4Addresses()
   }
 
   async startReceiver(port = 0): Promise<LanShareConfig> {
+    // Why: reopening the receive modal must reattach to the running server, not fail.
+    if (this.role === 'receiver' && this.receiverConfig) {
+      this.events.onStateChange(this.state)
+      this.events.onConfigReady(this.receiverConfig)
+      this.events.onOTPChallenge(this.otp ?? '', this.otpExpiresAt)
+      return this.receiverConfig
+    }
     if (this.state !== 'idle') {
       throw new Error('receiver already running')
     }
     this.role = 'receiver'
     this.state = 'receiver_waiting'
     this.events.onStateChange(this.state)
-    this.listenPort = await this.findFreePort(port)
+    this.listenPort = await findFreePort(port)
     const ips = this.getLocalIPs()
     this.otp = generateOTP()
     this.otpExpiresAt = Date.now() + 300_000
@@ -104,6 +91,7 @@ export class LanShareManager {
       onError: (err) => this.events.onError('server_error', err.message)
     })
     this.server.start()
+    this.receiverConfig = config
     this.events.onConfigReady(config)
     this.events.onOTPChallenge(this.otp ?? '', this.otpExpiresAt)
     return config
@@ -116,33 +104,14 @@ export class LanShareManager {
     this.role = null
     this.otp = null
     this.otpExpiresAt = 0
+    this.receiverConfig = null
     this.senderWs = null
     this.events.onStateChange(this.state)
   }
 
-  private async findFreePort(preferred: number): Promise<number> {
-    if (preferred > 0) {
-      return preferred
-    }
-    return new Promise((resolve, reject) => {
-      const s = require('node:net').createServer()
-      s.unref()
-      s.on('error', reject)
-      s.listen(0, () => {
-        const port = (s.address() as { port: number }).port
-        s.close(() => resolve(port))
-      })
-    })
-  }
-
   private handleSenderConnection(ws: LanShareWs): void {
     if (this.role !== 'receiver') {
-      ws.send(
-        JSON.stringify({
-          type: 'error',
-          payload: { code: 'not_receiver', message: 'not a receiver' }
-        })
-      )
+      sendLanMessage(ws, 'error', { code: 'not_receiver', message: 'not a receiver' })
       ws.close()
       return
     }
@@ -153,12 +122,7 @@ export class LanShareManager {
       try {
         this.handleSenderMessage(JSON.parse(raw.toString('utf-8')))
       } catch {
-        ws.send(
-          JSON.stringify({
-            type: 'error',
-            payload: { code: 'invalid_message', message: 'bad message' }
-          })
-        )
+        sendLanMessage(ws, 'error', { code: 'invalid_message', message: 'bad message' })
       }
     })
     ws.on('close', () => {
@@ -172,21 +136,15 @@ export class LanShareManager {
         this.events.onStateChange(this.state)
       }
     })
-    ws.send(
-      JSON.stringify({
-        type: 'hello',
-        payload: { role: 'receiver', deviceId: this.deviceId, deviceName: this.deviceName }
-      })
-    )
+    sendLanMessage(ws, 'hello', {
+      role: 'receiver',
+      deviceId: this.deviceId,
+      deviceName: this.deviceName
+    })
     this.state = 'receiver_otp_challenge'
     this.events.onStateChange(this.state)
     this.events.onOTPChallenge(this.otp ?? '', this.otpExpiresAt)
-    ws.send(
-      JSON.stringify({
-        type: 'otp_challenge',
-        payload: { otp: this.otp ?? '', expiresAt: this.otpExpiresAt }
-      })
-    )
+    sendLanMessage(ws, 'otp_challenge', { otp: this.otp ?? '', expiresAt: this.otpExpiresAt })
   }
 
   private async handleSenderMessage(msg: unknown): Promise<void> {
@@ -203,7 +161,7 @@ export class LanShareManager {
           this.state = 'receiver_connected'
           this.events.onStateChange(this.state)
           this.events.onOTPResult(true)
-          this.senderWs?.send(JSON.stringify({ type: 'otp_accepted', payload: {} }))
+          sendLanMessage(this.senderWs, 'otp_accepted', {})
         } else {
           this.events.onOTPResult(false)
         }
@@ -216,22 +174,19 @@ export class LanShareManager {
           this.state = 'transferring'
           this.events.onStateChange(this.state)
           this.events.onTransferProgress(1, 1, 100)
-          this.senderWs?.send(
-            JSON.stringify({
-              type: 'transfer_complete',
-              payload: { processId: this.pendingPtyId, success: true }
-            })
-          )
+          sendLanMessage(this.senderWs, 'transfer_complete', {
+            processId: this.pendingPtyId,
+            success: true
+          })
           this.events.onTransferComplete(true)
         } catch (err) {
           const msg = err instanceof Error ? err.message : String(err)
           this.events.onTransferComplete(false, msg)
-          this.senderWs?.send(
-            JSON.stringify({
-              type: 'transfer_complete',
-              payload: { processId: this.pendingPtyId, success: false, error: msg }
-            })
-          )
+          sendLanMessage(this.senderWs, 'transfer_complete', {
+            processId: this.pendingPtyId,
+            success: false,
+            error: msg
+          })
         }
         break
       }
@@ -250,12 +205,11 @@ export class LanShareManager {
     ) as unknown as LanShareWs
     this.senderWs = ws
     ws.on('open', () =>
-      ws.send(
-        JSON.stringify({
-          type: 'hello',
-          payload: { role: 'sender', deviceId: this.deviceId, deviceName: this.deviceName }
-        })
-      )
+      sendLanMessage(ws, 'hello', {
+        role: 'sender',
+        deviceId: this.deviceId,
+        deviceName: this.deviceName
+      })
     )
     ws.on('message', (raw: Buffer) => {
       try {
@@ -281,7 +235,7 @@ export class LanShareManager {
     }
     this.state = 'sender_otp_pending'
     this.events.onStateChange(this.state)
-    this.senderWs.send(JSON.stringify({ type: 'otp_submit', payload: { otp } }))
+    sendLanMessage(this.senderWs, 'otp_submit', { otp })
   }
 
   async transferPty(ptyId: string): Promise<void> {
@@ -293,9 +247,7 @@ export class LanShareManager {
     this.events.onStateChange(this.state)
     const state = await getLocalPtyProvider().serialize([ptyId])
     const totalBytes = new TextEncoder().encode(state).length
-    this.senderWs.send(
-      JSON.stringify({ type: 'transfer_start', payload: { processId: ptyId, ptyId, totalBytes } })
-    )
+    sendLanMessage(this.senderWs, 'transfer_start', { processId: ptyId, ptyId, totalBytes })
     const chunkSize = Math.ceil(totalBytes / 10)
     let sent = 0
     while (sent < totalBytes) {
@@ -303,9 +255,7 @@ export class LanShareManager {
       this.events.onTransferProgress(sent, totalBytes, Math.round((sent / totalBytes) * 100))
       await new Promise((r) => setTimeout(r, 100))
     }
-    this.senderWs.send(
-      JSON.stringify({ type: 'transfer_data', payload: { processId: ptyId, ptyId, state } })
-    )
+    sendLanMessage(this.senderWs, 'transfer_data', { processId: ptyId, ptyId, state })
   }
 
   private handleReceiverMessage(msg: unknown): void {

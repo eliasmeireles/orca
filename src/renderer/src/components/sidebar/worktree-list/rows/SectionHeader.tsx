@@ -40,6 +40,7 @@ import {
   RepoHeaderProjectActionsMenu,
   type RepoHeaderProjectActions
 } from './repo-header-project-actions'
+import { RepoHeaderLanShareMenu } from './repo-header-lan-share-menu'
 import {
   handleRepoHeaderCollapseAffordancePointerDown,
   shouldIgnoreRepoHeaderToggle
@@ -397,6 +398,8 @@ export function renderWorktreeSectionHeaderRow(args: {
               onCreateForRepo={ctx.projectActions.onCreateForRepo}
             />
           ) : null}
+
+          {row.repo && ctx.groupBy === 'repo' ? <RepoHeaderLanShareMenu label={label} /> : null}
         </ProjectHeaderActions>
       </div>
     </div>

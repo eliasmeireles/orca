@@ -6104,7 +6104,9 @@
           "deleteWorktree": "Delete Worktree",
           "sleepWithDescendants": "Sleep with Descendants ({{value0}})",
           "sleepWithDescendantsDescription": "Close active panels in this workspace and every nested descendant to free up memory and CPU.",
-          "deleteWithDescendants": "Delete with Descendants…"
+          "deleteWithDescendants": "Delete with Descendants…",
+          "sendTransfer": "Send to another PC",
+          "receiveTransfer": "Receive from another PC"
         },
         "WorktreeList": {
           "7a8b9c0d1e": "Update required",
@@ -6151,7 +6153,9 @@
           "failedNestWorkspace": "Failed to nest workspace",
           "sidebarRowMissing": "Target no longer exists",
           "failedUnnestWorkspace": "Failed to unnest workspace",
-          "hostRepairRequired": "Re-pair required"
+          "hostRepairRequired": "Re-pair required",
+          "lanShareFor": "Share {{value0}} over LAN",
+          "lanShare": "LAN transfer"
         },
         "WorktreeMetaDialog": {
           "3db0a2a593": "Cancel",
@@ -18173,6 +18177,44 @@
         "copied": "Sign-in link copied",
         "copyFailed": "Could not copy the link.",
         "signingIn": "Signing in…",
+        "cancel": "Cancel"
+      },
+      "lanShare": {
+        "progress": {
+          "transferring": "Transferring process"
+        },
+        "receive": {
+          "title": "Receive transfer",
+          "description": "Share the config and OTP code below with the sending PC.",
+          "otpLabel": "OTP code",
+          "otpHint": "Enter it on the sending PC",
+          "addressesLabel": "Available addresses (IP:PORT)",
+          "copy": "Copy",
+          "noIps": "No local IP address found",
+          "starting": "Starting server…",
+          "copied": "Config copied",
+          "copyConfig": "Copy config (base64)",
+          "device": "Device: {{value0}}",
+          "otpExpires": "OTP expires at {{value0}}",
+          "connected": "Connected to {{value0}}",
+          "stop": "Stop server",
+          "start": "Start server"
+        },
+        "close": "Close",
+        "send": {
+          "title": "Send transfer",
+          "description": "Paste the config copied from the receiving PC, then confirm its OTP code.",
+          "configLabel": "Receiving PC config (base64)",
+          "configPlaceholder": "Paste the base64 code copied from the receiving PC",
+          "configInvalid": "Invalid config",
+          "connect": "Connect",
+          "otpLabel": "OTP code shown on the receiving PC",
+          "confirmOtp": "Confirm OTP",
+          "ptyLabel": "PTY ID to transfer",
+          "ptyPlaceholder": "Paste the PTY ID",
+          "transfer": "Transfer PTY",
+          "completed": "Transfer completed successfully."
+        },
         "cancel": "Cancel"
       }
     },

@@ -96,9 +96,17 @@ export function useLanShare() {
         return null
       }
       setError(null)
-      const c = await api.startReceiver({ port })
-      setConfig(c)
-      return c
+      try {
+        const c = await api.startReceiver({ port })
+        setConfig(c)
+        return c
+      } catch (err) {
+        setError({
+          code: 'start_failed',
+          message: err instanceof Error ? err.message : String(err)
+        })
+        return null
+      }
     },
     [api]
   )

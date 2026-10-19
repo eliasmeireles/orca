@@ -1,6 +1,16 @@
-'use client'
-
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { Clipboard } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle
+} from '@/components/ui/dialog'
+import { Label } from '@/components/ui/label'
+import { translate } from '@/i18n/i18n'
 import { useLanShare } from './use-lan-share'
 
 type LanShareReceiveModalProps = {
@@ -8,146 +18,160 @@ type LanShareReceiveModalProps = {
   onClose: () => void
 }
 
+const COPIED_FEEDBACK_MS = 2000
+
 export function LanShareReceiveModal({ open, onClose }: LanShareReceiveModalProps) {
-  const { state, config, otp, peer, startReceiver, stopReceiver, getLocalIPs } = useLanShare()
-  const [copyMessage, setCopyMessage] = useState('')
+  const { state, config, otp, peer, error, startReceiver, stopReceiver } = useLanShare()
+  const [copied, setCopied] = useState(false)
+  const autoStartedRef = useRef(false)
+
+  useEffect(() => {
+    if (!open) {
+      autoStartedRef.current = false
+      return
+    }
+    if (autoStartedRef.current) {
+      return
+    }
+    autoStartedRef.current = true
+    void startReceiver().catch(() => {})
+  }, [open, startReceiver])
 
   const configBase64 = config ? btoa(JSON.stringify(config)) : ''
+  const running = state !== 'idle'
 
   const handleCopy = async (): Promise<void> => {
     if (!configBase64) {
       return
     }
     await navigator.clipboard.writeText(configBase64)
-    setCopyMessage('Config copiada!')
-    setTimeout(() => setCopyMessage(''), 2000)
-  }
-
-  const handleStart = async (): Promise<void> => {
-    await getLocalIPs()
-    await startReceiver()
-  }
-
-  if (!open) {
-    return null
+    setCopied(true)
+    setTimeout(() => setCopied(false), COPIED_FEEDBACK_MS)
   }
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
-      onClick={onClose}
-    >
-      <div
-        className="bg-background border border-input rounded-lg p-6 w-full max-w-md shadow-lg"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-center gap-2 mb-4">
-          <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-sm font-semibold">
-            LS
-          </div>
-          <h2 className="text-lg font-semibold text-foreground">Receber transferência</h2>
-        </div>
-
-        <div className="mb-4">
-          <label className="text-xs font-medium text-muted-foreground mb-2 block">Código OTP</label>
-          <div className="flex items-center justify-between bg-input border border-input rounded-lg px-3 py-2 text-lg font-mono text-foreground">
-            <span className="font-bold text-primary">{otp ?? '—'}</span>
-            {state === 'receiver_otp_challenge' && (
-              <span className="text-xs text-muted-foreground">informe no PC remetente</span>
+    <Dialog open={open} onOpenChange={(next) => !next && onClose()}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>
+            {translate('auto.components.lanShare.receive.title', 'Receive transfer')}
+          </DialogTitle>
+          <DialogDescription>
+            {translate(
+              'auto.components.lanShare.receive.description',
+              'Share the config and OTP code below with the sending PC.'
             )}
-          </div>
-        </div>
+          </DialogDescription>
+        </DialogHeader>
 
-        <div className="mb-4">
-          <label className="text-xs font-medium text-muted-foreground mb-2 block">
-            Endereços disponíveis (IP:PORTA)
-          </label>
-          <div className="space-y-2">
-            {(config?.ips ?? []).map((ip: string) => (
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-2">
+            <Label>{translate('auto.components.lanShare.receive.otpLabel', 'OTP code')}</Label>
+            <div className="flex items-center justify-between rounded-md border bg-muted px-3 py-2">
+              <span className="font-mono text-lg font-semibold">{otp ?? '—'}</span>
+              {state === 'receiver_otp_challenge' ? (
+                <span className="text-xs text-muted-foreground">
+                  {translate(
+                    'auto.components.lanShare.receive.otpHint',
+                    'Enter it on the sending PC'
+                  )}
+                </span>
+              ) : null}
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <Label>
+              {translate(
+                'auto.components.lanShare.receive.addressesLabel',
+                'Available addresses (IP:PORT)'
+              )}
+            </Label>
+            {(config?.ips ?? []).map((ip) => (
               <div
                 key={ip}
-                className="flex items-center justify-between bg-input border border-input rounded-lg px-3 py-2 text-sm text-foreground"
+                className="flex items-center justify-between rounded-md border px-3 py-1.5 text-sm"
               >
                 <span className="font-mono">
                   {ip}:{config?.listenPort ?? '—'}
                 </span>
-                <button
+                <Button
+                  variant="ghost"
+                  size="xs"
                   onClick={() => navigator.clipboard.writeText(`${ip}:${config?.listenPort ?? ''}`)}
-                  className="text-xs text-primary hover:underline"
                 >
-                  Copiar
-                </button>
+                  {translate('auto.components.lanShare.receive.copy', 'Copy')}
+                </Button>
               </div>
             ))}
-            {config?.ips?.length === 0 && (
-              <span className="text-xs text-muted-foreground">Nenhum IP local encontrado</span>
-            )}
+            {config && config.ips.length === 0 ? (
+              <span className="text-xs text-muted-foreground">
+                {translate('auto.components.lanShare.receive.noIps', 'No local IP address found')}
+              </span>
+            ) : null}
+            {!config && running ? (
+              <span className="text-xs text-muted-foreground">
+                {translate('auto.components.lanShare.receive.starting', 'Starting server…')}
+              </span>
+            ) : null}
           </div>
+
+          <Button variant="outline" onClick={handleCopy} disabled={!configBase64}>
+            <Clipboard className="size-3.5" />
+            {copied
+              ? translate('auto.components.lanShare.receive.copied', 'Config copied')
+              : translate('auto.components.lanShare.receive.copyConfig', 'Copy config (base64)')}
+          </Button>
+
+          {config ? (
+            <div className="flex flex-col gap-1 rounded-md bg-muted p-3 text-xs text-muted-foreground">
+              <span>
+                {translate('auto.components.lanShare.receive.device', 'Device: {{value0}}', {
+                  value0: config.deviceName
+                })}
+              </span>
+              <span>
+                {translate(
+                  'auto.components.lanShare.receive.otpExpires',
+                  'OTP expires at {{value0}}',
+                  {
+                    value0: new Date(config.otpExpiresAt ?? 0).toLocaleTimeString()
+                  }
+                )}
+              </span>
+            </div>
+          ) : null}
+
+          {peer ? (
+            <div className="rounded-md border p-3 text-xs">
+              {translate('auto.components.lanShare.receive.connected', 'Connected to {{value0}}', {
+                value0: peer.deviceName
+              })}
+            </div>
+          ) : null}
+
+          {error ? (
+            <div className="rounded-md border border-destructive/30 bg-destructive/10 p-3 text-xs text-destructive">
+              {error.message}
+            </div>
+          ) : null}
         </div>
 
-        <div className="mb-4">
-          <button
-            onClick={handleCopy}
-            disabled={!configBase64}
-            className="w-full flex items-center justify-center gap-2 bg-secondary text-secondary-foreground rounded-lg px-3 py-2 text-sm disabled:opacity-50"
-          >
-            {copyMessage ? (
-              <span className="text-green-600 text-xs font-medium">{copyMessage}</span>
-            ) : (
-              <>
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"
-                  />
-                </svg>
-                Copiar config (base64)
-              </>
-            )}
-          </button>
-        </div>
-
-        {config && (
-          <div className="mb-4 p-3 bg-muted rounded-lg text-xs text-muted-foreground">
-            <div className="mb-1">Dispositivo: {config.deviceName}</div>
-            <div className="mb-1">ID: {config.deviceId}</div>
-            <div className="mb-1">Porta: {config.listenPort ?? '—'}</div>
-            <div>OTP expira em: {new Date(config.otpExpiresAt ?? 0).toLocaleTimeString()}</div>
-          </div>
-        )}
-
-        <div className="mt-6 flex gap-2">
-          {state === 'idle' ? (
-            <button
-              onClick={handleStart}
-              className="flex-1 bg-primary text-primary-foreground rounded-lg px-3 py-2 text-sm font-medium hover:bg-primary/90"
-            >
-              Iniciar servidor
-            </button>
+        <DialogFooter>
+          {running ? (
+            <Button variant="destructive" onClick={() => void stopReceiver()}>
+              {translate('auto.components.lanShare.receive.stop', 'Stop server')}
+            </Button>
           ) : (
-            <button
-              onClick={stopReceiver}
-              className="flex-1 bg-destructive text-destructive-foreground rounded-lg px-3 py-2 text-sm font-medium hover:bg-destructive/90"
-            >
-              Parar servidor
-            </button>
+            <Button onClick={() => void startReceiver().catch(() => {})}>
+              {translate('auto.components.lanShare.receive.start', 'Start server')}
+            </Button>
           )}
-          <button
-            onClick={onClose}
-            className="flex-1 bg-input text-foreground rounded-lg px-3 py-2 text-sm hover:bg-muted"
-          >
-            Fechar
-          </button>
-        </div>
-
-        {peer && (
-          <div className="mt-4 p-3 bg-green-50 border border-green-100 rounded-lg text-xs text-green-800">
-            Conectado com {peer.deviceName} ({peer.deviceId})
-          </div>
-        )}
-      </div>
-    </div>
+          <Button variant="outline" onClick={onClose}>
+            {translate('auto.components.lanShare.close', 'Close')}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }

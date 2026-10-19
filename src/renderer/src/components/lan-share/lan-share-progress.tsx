@@ -1,4 +1,4 @@
-'use client'
+import { translate } from '@/i18n/i18n'
 
 type LanShareProgressProps = {
   progress: { transferredBytes: number; totalBytes: number; percentage: number } | null
@@ -14,7 +14,9 @@ export function LanShareProgress({ progress }: LanShareProgressProps) {
   return (
     <div className="space-y-2">
       <div className="flex justify-between text-xs text-muted-foreground">
-        <span>Transferindo processo</span>
+        <span>
+          {translate('auto.components.lanShare.progress.transferring', 'Transferring process')}
+        </span>
         <span>{percentage.toFixed(0)}%</span>
       </div>
       <div className="w-full bg-input rounded-full h-2">
