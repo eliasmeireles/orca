@@ -18185,15 +18185,14 @@
         },
         "receive": {
           "title": "Receive transfer",
-          "description": "Share the config and OTP code below with the sending PC.",
+          "description": "Enter one of the addresses and the OTP code below on the sending PC.",
           "otpLabel": "OTP code",
           "otpHint": "Enter it on the sending PC",
           "addressesLabel": "Available addresses (IP:PORT)",
           "copy": "Copy",
           "noIps": "No local IP address found",
           "starting": "Starting server…",
-          "copied": "Config copied",
-          "copyConfig": "Copy config (base64)",
+          "copied": "Copied",
           "device": "Device: {{value0}}",
           "otpExpires": "OTP expires at {{value0}}",
           "connected": "Connected to {{value0}}",
@@ -18203,17 +18202,16 @@
         "close": "Close",
         "send": {
           "title": "Send transfer",
-          "description": "Paste the config copied from the receiving PC, then confirm its OTP code.",
-          "configLabel": "Receiving PC config (base64)",
-          "configPlaceholder": "Paste the base64 code copied from the receiving PC",
-          "configInvalid": "Invalid config",
           "connect": "Connect",
           "otpLabel": "OTP code shown on the receiving PC",
           "confirmOtp": "Confirm OTP",
           "ptyLabel": "PTY ID to transfer",
           "ptyPlaceholder": "Paste the PTY ID",
           "transfer": "Transfer PTY",
-          "completed": "Transfer completed successfully."
+          "completed": "Transfer completed successfully.",
+          "descriptionAddress": "Enter the address shown on the receiving PC, then confirm its OTP code.",
+          "addressLabel": "Receiving PC address (IP:PORT)",
+          "addressInvalid": "Enter an address like 192.168.1.10:61569"
         },
         "cancel": "Cancel"
       }

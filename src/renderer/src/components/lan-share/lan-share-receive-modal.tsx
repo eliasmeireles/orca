@@ -1,5 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
-import { Clipboard } from 'lucide-react'
+import { useEffect, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -12,17 +11,15 @@ import {
 import { Label } from '@/components/ui/label'
 import { translate } from '@/i18n/i18n'
 import { useLanShare } from './use-lan-share'
+import { LanShareAddressRow } from './lan-share-address-row'
 
 type LanShareReceiveModalProps = {
   open: boolean
   onClose: () => void
 }
 
-const COPIED_FEEDBACK_MS = 2000
-
 export function LanShareReceiveModal({ open, onClose }: LanShareReceiveModalProps) {
   const { state, config, otp, peer, error, startReceiver, stopReceiver } = useLanShare()
-  const [copied, setCopied] = useState(false)
   const autoStartedRef = useRef(false)
 
   useEffect(() => {
@@ -37,20 +34,16 @@ export function LanShareReceiveModal({ open, onClose }: LanShareReceiveModalProp
     void startReceiver().catch(() => {})
   }, [open, startReceiver])
 
-  const configBase64 = config ? btoa(JSON.stringify(config)) : ''
   const running = state !== 'idle'
 
-  const handleCopy = async (): Promise<void> => {
-    if (!configBase64) {
-      return
-    }
-    await navigator.clipboard.writeText(configBase64)
-    setCopied(true)
-    setTimeout(() => setCopied(false), COPIED_FEEDBACK_MS)
+  // Why: the server only lives while this modal is open, so closing it must stop listening.
+  const handleClose = (): void => {
+    void stopReceiver()
+    onClose()
   }
 
   return (
-    <Dialog open={open} onOpenChange={(next) => !next && onClose()}>
+    <Dialog open={open} onOpenChange={(next) => !next && handleClose()}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>
@@ -59,7 +52,7 @@ export function LanShareReceiveModal({ open, onClose }: LanShareReceiveModalProp
           <DialogDescription>
             {translate(
               'auto.components.lanShare.receive.description',
-              'Share the config and OTP code below with the sending PC.'
+              'Enter one of the addresses and the OTP code below on the sending PC.'
             )}
           </DialogDescription>
         </DialogHeader>
@@ -88,21 +81,7 @@ export function LanShareReceiveModal({ open, onClose }: LanShareReceiveModalProp
               )}
             </Label>
             {(config?.ips ?? []).map((ip) => (
-              <div
-                key={ip}
-                className="flex items-center justify-between rounded-md border px-3 py-1.5 text-sm"
-              >
-                <span className="font-mono">
-                  {ip}:{config?.listenPort ?? '—'}
-                </span>
-                <Button
-                  variant="ghost"
-                  size="xs"
-                  onClick={() => navigator.clipboard.writeText(`${ip}:${config?.listenPort ?? ''}`)}
-                >
-                  {translate('auto.components.lanShare.receive.copy', 'Copy')}
-                </Button>
-              </div>
+              <LanShareAddressRow key={ip} address={`${ip}:${config?.listenPort ?? ''}`} />
             ))}
             {config && config.ips.length === 0 ? (
               <span className="text-xs text-muted-foreground">
@@ -115,13 +94,6 @@ export function LanShareReceiveModal({ open, onClose }: LanShareReceiveModalProp
               </span>
             ) : null}
           </div>
-
-          <Button variant="outline" onClick={handleCopy} disabled={!configBase64}>
-            <Clipboard className="size-3.5" />
-            {copied
-              ? translate('auto.components.lanShare.receive.copied', 'Config copied')
-              : translate('auto.components.lanShare.receive.copyConfig', 'Copy config (base64)')}
-          </Button>
 
           {config ? (
             <div className="flex flex-col gap-1 rounded-md bg-muted p-3 text-xs text-muted-foreground">
@@ -167,7 +139,7 @@ export function LanShareReceiveModal({ open, onClose }: LanShareReceiveModalProp
               {translate('auto.components.lanShare.receive.start', 'Start server')}
             </Button>
           )}
-          <Button variant="outline" onClick={onClose}>
+          <Button variant="outline" onClick={handleClose}>
             {translate('auto.components.lanShare.close', 'Close')}
           </Button>
         </DialogFooter>

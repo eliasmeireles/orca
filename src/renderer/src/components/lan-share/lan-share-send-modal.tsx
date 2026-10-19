@@ -10,10 +10,10 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
 import { translate } from '@/i18n/i18n'
 import { useLanShare } from './use-lan-share'
 import { LanShareProgress } from './lan-share-progress'
+import { parseLanShareAddress } from './lan-share-address'
 
 type LanShareSendModalProps = {
   open: boolean
@@ -25,19 +25,23 @@ const OTP_LENGTH = 6
 export function LanShareSendModal({ open, onClose }: LanShareSendModalProps) {
   const { state, connectSender, submitOTP, transferPty, close, progress, error, otpAccepted } =
     useLanShare()
-  const [configText, setConfigText] = useState('')
-  const [configInvalid, setConfigInvalid] = useState(false)
+  const [address, setAddress] = useState('')
+  const [addressInvalid, setAddressInvalid] = useState(false)
   const [otpInput, setOtpInput] = useState('')
   const [ptyId, setPtyId] = useState('')
 
   const handleConnect = async (): Promise<void> => {
-    try {
-      const config = JSON.parse(atob(configText.trim()))
-      setConfigInvalid(false)
+    const config = parseLanShareAddress(address)
+    setAddressInvalid(config === null)
+    if (config) {
       await connectSender(config)
-    } catch {
-      setConfigInvalid(true)
     }
+  }
+
+  // Why: tear down the sender socket too, or reopening fails with "already in a session".
+  const handleClose = (): void => {
+    void close()
+    onClose()
   }
 
   const awaitingConfig = state === 'idle' || state === 'sender_connecting'
@@ -45,7 +49,7 @@ export function LanShareSendModal({ open, onClose }: LanShareSendModalProps) {
   const readyToTransfer = otpAccepted && state !== 'transferring' && state !== 'completed'
 
   return (
-    <Dialog open={open} onOpenChange={(next) => !next && onClose()}>
+    <Dialog open={open} onOpenChange={(next) => !next && handleClose()}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>
@@ -53,8 +57,8 @@ export function LanShareSendModal({ open, onClose }: LanShareSendModalProps) {
           </DialogTitle>
           <DialogDescription>
             {translate(
-              'auto.components.lanShare.send.description',
-              'Paste the config copied from the receiving PC, then confirm its OTP code.'
+              'auto.components.lanShare.send.descriptionAddress',
+              'Enter the address shown on the receiving PC, then confirm its OTP code.'
             )}
           </DialogDescription>
         </DialogHeader>
@@ -62,29 +66,28 @@ export function LanShareSendModal({ open, onClose }: LanShareSendModalProps) {
         <div className="flex flex-col gap-4">
           {awaitingConfig ? (
             <div className="flex flex-col gap-2">
-              <Label htmlFor="lan-share-config">
+              <Label htmlFor="lan-share-address">
                 {translate(
-                  'auto.components.lanShare.send.configLabel',
-                  'Receiving PC config (base64)'
+                  'auto.components.lanShare.send.addressLabel',
+                  'Receiving PC address (IP:PORT)'
                 )}
               </Label>
-              <Textarea
-                id="lan-share-config"
-                value={configText}
-                onChange={(event) => setConfigText(event.target.value)}
-                variant="code"
-                className="h-24 resize-none"
-                placeholder={translate(
-                  'auto.components.lanShare.send.configPlaceholder',
-                  'Paste the base64 code copied from the receiving PC'
-                )}
+              <Input
+                id="lan-share-address"
+                value={address}
+                onChange={(event) => setAddress(event.target.value)}
+                onKeyDown={(event) => event.key === 'Enter' && void handleConnect()}
+                placeholder="192.168.1.10:61569"
               />
-              {configInvalid ? (
+              {addressInvalid ? (
                 <span className="text-xs text-destructive">
-                  {translate('auto.components.lanShare.send.configInvalid', 'Invalid config')}
+                  {translate(
+                    'auto.components.lanShare.send.addressInvalid',
+                    'Enter an address like 192.168.1.10:61569'
+                  )}
                 </span>
               ) : null}
-              <Button onClick={handleConnect} disabled={!configText.trim()}>
+              <Button onClick={handleConnect} disabled={!address.trim()}>
                 {translate('auto.components.lanShare.send.connect', 'Connect')}
               </Button>
             </div>
@@ -159,7 +162,7 @@ export function LanShareSendModal({ open, onClose }: LanShareSendModalProps) {
               {translate('auto.components.lanShare.cancel', 'Cancel')}
             </Button>
           ) : null}
-          <Button variant="outline" onClick={onClose}>
+          <Button variant="outline" onClick={handleClose}>
             {translate('auto.components.lanShare.close', 'Close')}
           </Button>
         </DialogFooter>
